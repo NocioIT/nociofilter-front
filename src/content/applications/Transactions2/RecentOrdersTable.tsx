@@ -12,7 +12,13 @@ import {
   Tooltip,
   Checkbox,
   Snackbar,
-  Alert
+  Alert,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TableSortLabel,
+  TextField,
 } from '@mui/material';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
@@ -27,6 +33,7 @@ export interface CryptoOrder {
   email: string;
   password: string;
   valid: boolean;
+  risk: string; // Adicionar risk ao tipo CryptoOrder
 }
 
 interface RecentOrdersTableProps {
@@ -51,11 +58,14 @@ const RecentOrdersTable: FC<RecentOrdersTableProps> = ({ cryptoOrders, onUpdateO
   const [rowsPerPage, setRowsPerPage] = useState<number>(cryptoOrders.pageable.pageSize);
   const [orders, setOrders] = useState<CryptoOrder[]>(cryptoOrders.content);
   const [snackbarOpen, setSnackbarOpen] = useState<boolean>(false);
+  const [orderBy, setOrderBy] = useState<string>('');
+  const [order, setOrder] = useState<'asc' | 'desc'>('asc');
+  const [filterText, setFilterText] = useState<string>('');
 
   useEffect(() => {
-    setPage(cryptoOrders.pageable.pageNumber); // Atualizar o estado da página quando os pedidos são atualizados
-    setRowsPerPage(cryptoOrders.pageable.pageSize); // Atualizar o estado do tamanho da página quando os pedidos são atualizados
-    setOrders(cryptoOrders.content); // Atualizar o estado dos pedidos quando os pedidos são atualizados
+    setPage(cryptoOrders.pageable.pageNumber);
+    setRowsPerPage(cryptoOrders.pageable.pageSize);
+    setOrders(cryptoOrders.content);
   }, [cryptoOrders]);
 
   const handleChangePage = async (event: unknown, newPage: number) => {
@@ -66,7 +76,7 @@ const RecentOrdersTable: FC<RecentOrdersTableProps> = ({ cryptoOrders, onUpdateO
   const handleChangeRowsPerPage = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const newPageSize = parseInt(event.target.value, 10);
     setRowsPerPage(newPageSize);
-    setPage(0); // Reset page number when rows per page changes
+    setPage(0);
     await onUpdateOrders(0, newPageSize);
   };
 
@@ -100,7 +110,6 @@ const RecentOrdersTable: FC<RecentOrdersTableProps> = ({ cryptoOrders, onUpdateO
       );
       setSnackbarOpen(true);
 
-      // Request de delete após a atualização de validade bem-sucedida
       await axios.delete(`http://localhost:8080/validlogs/${id}`);
     } catch (error) {
       console.error('Error updating validity:', error);
@@ -110,7 +119,7 @@ const RecentOrdersTable: FC<RecentOrdersTableProps> = ({ cryptoOrders, onUpdateO
 
   const handleDelete = async (id: number) => {
     try {
-      await axios.delete(`http://localhost:8080/validlogs/${id}`);
+      await axios.delete(`http://localhost:8080/logs/${id}`);
       setOrders((prevOrders) => prevOrders.filter((order) => order.id !== id));
     } catch (error) {
       console.error('Error deleting order:', error);
@@ -118,9 +127,52 @@ const RecentOrdersTable: FC<RecentOrdersTableProps> = ({ cryptoOrders, onUpdateO
     }
   };
 
+  const handleRiskChange = async (id: number, risk: string) => {
+    try {
+      await axios.patch('http://localhost:8080/validlogs/risk', { id, risk });
+      setOrders((prevOrders) =>
+        prevOrders.map((order) => (order.id === id ? { ...order, risk } : order))
+      );
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error('Error updating risk:', error);
+      alert(`Failed to update risk: ${error.message}`);
+    }
+  };
+
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
   };
+
+  const handleSortRequest = (property: string) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
+
+  const filteredOrders = orders.filter(order =>
+    order.email.toLowerCase().includes(filterText.toLowerCase()) ||
+    order.password.toLowerCase().includes(filterText.toLowerCase()) ||
+    order.url.toLowerCase().includes(filterText.toLowerCase()) ||
+    extractDomain(order.url).toLowerCase().includes(filterText.toLowerCase()) ||
+    order.risk.toLowerCase().includes(filterText.toLowerCase())
+  );
+
+  const sortedOrders = filteredOrders.sort((a, b) => {
+    if (orderBy === 'email') {
+      return (a.email < b.email ? -1 : 1) * (order === 'asc' ? 1 : -1);
+    } else if (orderBy === 'password') {
+      return (a.password < b.password ? -1 : 1) * (order === 'asc' ? 1 : -1);
+    } else if (orderBy === 'url') {
+      return (a.url < b.url ? -1 : 1) * (order === 'asc' ? 1 : -1);
+    } else if (orderBy === 'domain') {
+      return (extractDomain(a.url) < extractDomain(b.url) ? -1 : 1) * (order === 'asc' ? 1 : -1);
+    } else if (orderBy === 'risk') {
+      return (a.risk < b.risk ? -1 : 1) * (order === 'asc' ? 1 : -1);
+    } else {
+      return 0;
+    }
+  });
 
   if (!Array.isArray(cryptoOrders.content)) {
     console.error('cryptoOrders.content is not an array:', cryptoOrders.content);
@@ -129,20 +181,64 @@ const RecentOrdersTable: FC<RecentOrdersTableProps> = ({ cryptoOrders, onUpdateO
 
   return (
     <Card>
+      <TextField
+        label="Filtrar"
+        variant="outlined"
+        value={filterText}
+        onChange={(e) => setFilterText(e.target.value)}
+        style={{ margin: '10px' }}
+      />
       <TableContainer>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>Email/Username</TableCell>
-              <TableCell>Senha</TableCell>
-              <TableCell>URL</TableCell>
-              <TableCell>Domínio</TableCell>
-              <TableCell>Válido</TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'email'}
+                  direction={orderBy === 'email' ? order : 'asc'}
+                  onClick={() => handleSortRequest('email')}
+                >
+                  Email/Username
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'password'}
+                  direction={orderBy === 'password' ? order : 'asc'}
+                  onClick={() => handleSortRequest('password')}
+                >
+                  Senha
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'url'}
+                  direction={orderBy === 'url' ? order : 'asc'}
+                  onClick={() => handleSortRequest('url')}
+                >
+                  URL
+                </TableSortLabel>
+              </TableCell>
+              <TableCell>
+                Domínio
+              </TableCell>
+              <TableCell>
+                Válido
+              </TableCell>
+              <TableCell>
+                <TableSortLabel
+                  active={orderBy === 'risk'}
+                  direction={orderBy === 'risk' ? order : 'asc'}
+                  onClick={() => handleSortRequest('risk')}
+                >
+                  Risco
+                </TableSortLabel>
+              </TableCell>
               <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {orders.map((order) => (
+            {sortedOrders.map((order) => (
               <TableRow key={order.id}>
                 <TableCell>
                   <Tooltip title={order.email}>
@@ -187,6 +283,21 @@ const RecentOrdersTable: FC<RecentOrdersTableProps> = ({ cryptoOrders, onUpdateO
                     checked={order.valid}
                     onChange={(e) => handleValidChange(order.id, e.target.checked)}
                   />
+                </TableCell>
+                <TableCell>
+                  <FormControl>
+                    <InputLabel id={`risk-label-${order.id}`}>Risco</InputLabel>
+                    <Select
+                      labelId={`risk-label-${order.id}`}
+                      id={`risk-select-${order.id}`}
+                      value={order.risk}
+                      onChange={(e) => handleRiskChange(order.id, e.target.value as string)}
+                    >
+                      <MenuItem value="MENOS GRAVE">MENOS GRAVE</MenuItem>
+                      <MenuItem value="GRAVE">GRAVE</MenuItem>
+                      <MenuItem value="MUITO GRAVE">MUITO GRAVE</MenuItem>
+                    </Select>
+                  </FormControl>
                 </TableCell>
                 <TableCell>
                   <Tooltip title="Excluir Pedido" arrow>
@@ -234,7 +345,7 @@ const RecentOrdersTable: FC<RecentOrdersTableProps> = ({ cryptoOrders, onUpdateO
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
         <Alert onClose={handleSnackbarClose} severity="success" sx={{ width: '100%' }}>
-          Marcado como válido com sucesso!
+          Atualizado com sucesso!
         </Alert>
       </Snackbar>
     </Card>

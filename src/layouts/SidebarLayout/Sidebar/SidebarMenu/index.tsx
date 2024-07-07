@@ -218,17 +218,6 @@ function SidebarMenu() {
                   Upload Logs
                 </Button>
               </ListItem>
-              <ListItem component="div">
-                <Button
-                  disableRipple
-                  component={RouterLink}
-                  onClick={closeSidebar}
-                  to="/dashboards/messenger"
-                  startIcon={<MmsTwoToneIcon />}
-                >
-                  Messenger
-                </Button>
-              </ListItem>
             </List>
           </SubMenuWrapper>
         </List>
