@@ -94,14 +94,14 @@ const RecentOrdersTable: FC<RecentOrdersTableProps> = ({ cryptoOrders, onUpdateO
 
   const handleValidChange = async (id: number, valid: boolean) => {
     try {
-      await axios.patch('http://localhost:8080/logs', { id, valid });
+      await axios.patch('http://localhost:8080/validlogs', { id, valid });
       setOrders((prevOrders) =>
         prevOrders.map((order) => (order.id === id ? { ...order, valid } : order))
       );
       setSnackbarOpen(true);
 
       // Request de delete após a atualização de validade bem-sucedida
-      await axios.delete(`http://localhost:8080/logs/${id}`);
+      await axios.delete(`http://localhost:8080/validlogs/${id}`);
     } catch (error) {
       console.error('Error updating validity:', error);
       alert(`Failed to update validity: ${error.message}`);
@@ -110,7 +110,7 @@ const RecentOrdersTable: FC<RecentOrdersTableProps> = ({ cryptoOrders, onUpdateO
 
   const handleDelete = async (id: number) => {
     try {
-      await axios.delete(`http://localhost:8080/logs/${id}`);
+      await axios.delete(`http://localhost:8080/validlogs/${id}`);
       setOrders((prevOrders) => prevOrders.filter((order) => order.id !== id));
     } catch (error) {
       console.error('Error deleting order:', error);

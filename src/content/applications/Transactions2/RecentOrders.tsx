@@ -26,7 +26,7 @@ function RecentOrders() {
   const fetchCryptoOrders = useCallback(async (pageNumber: number, pageSize: number, search: string = '') => {
     try {
       const response = await axios.get<CryptoOrderResponse>(
-        `http://localhost:8080/logs?page=${pageNumber}&size=${pageSize}&filter=${search}`
+        `http://localhost:8080/validlogs?page=${pageNumber}&size=${pageSize}&filter=${search}`
       );
       setCryptoOrders(response.data);
     } catch (error) {

@@ -30,6 +30,11 @@ const Messenger = Loader(
 const Transactions = Loader(
   lazy(() => import('src/content/applications/Transactions'))
 );
+
+const Transactions2 = Loader(
+  lazy(() => import('src/content/applications/Transactions2'))
+);
+
 const UserProfile = Loader(
   lazy(() => import('src/content/applications/Users/profile'))
 );
@@ -121,100 +126,37 @@ const routes: RouteObject[] = [
     ]
   },
   {
-    path: 'dashboards',
+    path: '',
     element: <SidebarLayout />,
     children: [
       {
         path: '',
-        element: <Navigate to="tasks" replace />
+        element: <Navigate to="" replace />
       },
       {
-        path: 'tasks',
+        path: 'upload',
         element: <Tasks />
       },
-      {
-        path: 'messenger',
-        element: <Messenger />
-      }
     ]
   },
   {
-    path: 'management',
+    path: 'logs',
     element: <SidebarLayout />,
     children: [
       {
         path: '',
-        element: <Navigate to="transactions" replace />
+        element: <Navigate to="gerais" replace />
       },
       {
-        path: 'transactions',
+        path: 'gerais',
         element: <Transactions />
       },
       {
-        path: 'profile',
-        children: [
-          {
-            path: '',
-            element: <Navigate to="details" replace />
-          },
-          {
-            path: 'details',
-            element: <UserProfile />
-          },
-          {
-            path: 'settings',
-            element: <UserSettings />
-          }
-        ]
-      }
+        path: 'validas',
+        element: <Transactions2 />
+      },
     ]
   },
-  {
-    path: '/components',
-    element: <SidebarLayout />,
-    children: [
-      {
-        path: '',
-        element: <Navigate to="buttons" replace />
-      },
-      {
-        path: 'buttons',
-        element: <Buttons />
-      },
-      {
-        path: 'modals',
-        element: <Modals />
-      },
-      {
-        path: 'accordions',
-        element: <Accordions />
-      },
-      {
-        path: 'tabs',
-        element: <Tabs />
-      },
-      {
-        path: 'badges',
-        element: <Badges />
-      },
-      {
-        path: 'tooltips',
-        element: <Tooltips />
-      },
-      {
-        path: 'avatars',
-        element: <Avatars />
-      },
-      {
-        path: 'cards',
-        element: <Cards />
-      },
-      {
-        path: 'forms',
-        element: <Forms />
-      }
-    ]
-  }
 ];
 
 export default routes;

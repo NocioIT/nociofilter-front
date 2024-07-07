@@ -1,123 +1,101 @@
-import { ChangeEvent, useState } from 'react';
+import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import PageHeader from './PageHeader';
 import Footer from 'src/components/Footer';
 import {
-  Grid,
-  Tab,
-  Tabs,
-  Divider,
+  Button,
   Container,
   Card,
   Box,
-  useTheme,
-  Avatar,
+  Grid,
+  TextField,
+  CircularProgress,
+  Snackbar,
+  Typography,
+  Alert,
   styled
 } from '@mui/material';
 import PageTitleWrapper from 'src/components/PageTitleWrapper';
 
-import TeamOverview from './TeamOverview';
-import TasksAnalytics from './TasksAnalytics';
-import Performance from './Performance';
-import Projects from './Projects';
-import Checklist from './Checklist';
-import Profile from './Profile';
-import TaskSearch from './TaskSearch';
-
-const TabsContainerWrapper = styled(Box)(
+const UploadButton = styled('label')(
   ({ theme }) => `
-      padding: 0 ${theme.spacing(2)};
-      position: relative;
-      bottom: -1px;
+    display: inline-block;
+    background-color: ${theme.palette.success.main};
+    color: ${theme.palette.common.white};
+    padding: 12px 24px;
+    cursor: pointer;
+    border-radius: ${theme.shape.borderRadius}px;
+    text-align: center;
+    transition: background-color 0.3s;
 
-      .MuiTabs-root {
-        height: 44px;
-        min-height: 44px;
-      }
-
-      .MuiTabs-scrollableX {
-        overflow-x: auto !important;
-      }
-
-      .MuiTabs-indicator {
-          min-height: 4px;
-          height: 4px;
-          box-shadow: none;
-          bottom: -4px;
-          background: none;
-          border: 0;
-
-          &:after {
-            position: absolute;
-            left: 50%;
-            width: 28px;
-            content: ' ';
-            margin-left: -14px;
-            background: ${theme.colors.primary.main};
-            border-radius: inherit;
-            height: 100%;
-          }
-      }
-
-      .MuiTab-root {
-          &.MuiButtonBase-root {
-              height: 44px;
-              min-height: 44px;
-              background: ${theme.colors.alpha.white[50]};
-              border: 1px solid ${theme.colors.alpha.black[10]};
-              border-bottom: 0;
-              position: relative;
-              margin-right: ${theme.spacing(1)};
-              font-size: ${theme.typography.pxToRem(14)};
-              color: ${theme.colors.alpha.black[80]};
-              border-bottom-left-radius: 0;
-              border-bottom-right-radius: 0;
-
-              .MuiTouchRipple-root {
-                opacity: .1;
-              }
-
-              &:after {
-                position: absolute;
-                left: 0;
-                right: 0;
-                width: 100%;
-                bottom: 0;
-                height: 1px;
-                content: '';
-                background: ${theme.colors.alpha.black[10]};
-              }
-
-              &:hover {
-                color: ${theme.colors.alpha.black[100]};
-              }
-          }
-
-          &.Mui-selected {
-              color: ${theme.colors.alpha.black[100]};
-              background: ${theme.colors.alpha.white[100]};
-              border-bottom-color: ${theme.colors.alpha.white[100]};
-
-              &:after {
-                height: 0;
-              }
-          }
-      }
+    &:hover {
+      background-color: ${theme.palette.success.dark};
+    }
   `
 );
 
+const HiddenFileInput = styled('input')`
+  display: none;
+`;
+
 function DashboardTasks() {
-  const theme = useTheme();
+  const [filter, setFilter] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [fileName, setFileName] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [openSnackbar, setOpenSnackbar] = useState(false);
 
-  const [currentTab, setCurrentTab] = useState<string>('analytics');
+  const handleFilterChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFilter(event.target.value);
+  };
 
-  const tabs = [
-    { value: 'analytics', label: 'Analytics Overview' },
-    { value: 'taskSearch', label: 'Task Search' }
-  ];
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      const selectedFile = event.target.files[0];
+      setFile(selectedFile);
+      setFileName(selectedFile.name);
+    }
+  };
 
-  const handleTabsChange = (_event: ChangeEvent<{}>, value: string): void => {
-    setCurrentTab(value);
+  const handleUpload = async () => {
+    if (!file) {
+      alert('Por favor, selecione um arquivo para fazer upload.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('filter', filter);
+
+    setLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:8080/logs/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (response.ok) {
+        setOpenSnackbar(true);
+        setTimeout(() => {
+          setOpenSnackbar(false);
+        }, 3000);
+      } else {
+        alert('Falha ao enviar arquivo.');
+      }
+    } catch (error) {
+      console.error('Erro ao enviar arquivo:', error);
+      alert('Erro ao enviar arquivo.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCloseSnackbar = (event: React.SyntheticEvent | Event, reason?: string) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setOpenSnackbar(false);
   };
 
   return (
@@ -129,98 +107,72 @@ function DashboardTasks() {
         <PageHeader />
       </PageTitleWrapper>
       <Container maxWidth="lg">
-        <TabsContainerWrapper>
-          <Tabs
-            onChange={handleTabsChange}
-            value={currentTab}
-            variant="scrollable"
-            scrollButtons="auto"
-            textColor="primary"
-            indicatorColor="primary"
-          >
-            {tabs.map((tab) => (
-              <Tab key={tab.value} label={tab.label} value={tab.value} />
-            ))}
-          </Tabs>
-        </TabsContainerWrapper>
         <Card variant="outlined">
-          <Grid
-            container
-            direction="row"
-            justifyContent="center"
-            alignItems="stretch"
-            spacing={0}
-          >
-            {currentTab === 'analytics' && (
-              <>
-                <Grid item xs={12}>
-                  <Box p={4}>
-                    <TeamOverview />
-                  </Box>
-                </Grid>
-                <Grid item xs={12}>
-                  <Divider />
-                  <Box
-                    p={4}
-                    sx={{
-                      background: `${theme.colors.alpha.black[5]}`
-                    }}
-                  >
-                    <Grid container spacing={4}>
-                      <Grid item xs={12} sm={6} md={8}>
-                        <TasksAnalytics />
-                      </Grid>
-                      <Grid item xs={12} sm={6} md={4}>
-                        <Performance />
-                      </Grid>
-                    </Grid>
-                  </Box>
-                  <Divider />
-                </Grid>
-                <Grid item xs={12}>
-                  <Box p={4}>
-                    <Projects />
-                  </Box>
-                  <Divider />
-                </Grid>
-                <Grid item xs={12}>
-                  <Box
-                    sx={{
-                      background: `${theme.colors.alpha.black[5]}`
-                    }}
-                  >
-                    <Grid container spacing={0}>
-                      <Grid item xs={12} md={6}>
-                        <Box
-                          p={4}
-                          sx={{
-                            background: `${theme.colors.alpha.white[70]}`
-                          }}
-                        >
-                          <Checklist />
-                        </Box>
-                      </Grid>
-                      <Grid item xs={12} md={6}>
-                        <Box p={4}>
-                          <Profile />
-                        </Box>
-                      </Grid>
-                    </Grid>
-                  </Box>
-                </Grid>
-              </>
-            )}
-            {currentTab === 'taskSearch' && (
-              <Grid item xs={12}>
-                <Box p={4}>
-                  <TaskSearch />
+          <Grid container justifyContent="center" spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <Box p={4}>
+                <TextField
+                  fullWidth
+                  label="Filtro"
+                  variant="outlined"
+                  value={filter}
+                  onChange={handleFilterChange}
+                />
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Box p={4}>
+                <HiddenFileInput
+                  type="file"
+                  accept=".txt"
+                  onChange={handleFileChange}
+                  id="upload-file-input"
+                />
+                <UploadButton htmlFor="upload-file-input">
+                  Upload do Ficheiro
+                </UploadButton>
+                {fileName && <Box p={2}>{fileName}</Box>}
+              </Box>
+            </Grid>
+            <Grid item xs={12}>
+              <Box p={4} display="flex" justifyContent="center">
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleUpload}
+                >
+                  Confirmar Upload
+                </Button>
+              </Box>
+              {loading && (
+                <Box
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  flexDirection="column"
+                  ml={2}
+                >
+                  <CircularProgress size={24} style={{ marginLeft: 15, marginRight: 15 }} />
+                  <Typography variant="body1" color="textSecondary" align="center" marginBottom={5} marginTop={5}>
+                    Não feches a página, o ficheiro está a ser carregado e pode demorar alguns minutos consoante o tamanho do mesmo.
+                  </Typography>
                 </Box>
-              </Grid>
-            )}
+              )}
+            </Grid>
           </Grid>
         </Card>
       </Container>
       <Footer />
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={null}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity="success">
+          Upload com sucesso!
+        </Alert>
+      </Snackbar>
     </>
   );
 }

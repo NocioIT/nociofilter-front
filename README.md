@@ -1,6 +1,6 @@
 <p align="center">
     <a href="https://bloomui.com" title="BloomUI.com">
-        <img src="https://bloomui.s3.us-east-2.amazonaws.com/tokyo-logo.png" alt="Tokyo Free Black Typescript React Admin Dashboard">
+        <img src="public/nocio.png" alt="Tokyo Free Black Typescript React Admin Dashboard">
     </a>
 </p>
 <h1 align="center">
